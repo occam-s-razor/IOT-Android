@@ -19,31 +19,20 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //申请权限
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_PHONE_STATE},0);
-        }
 
-        Intent intent_service = new Intent(this,MyMQttService.class);
-        startService(intent_service);
+
+        //开启MQTT服务
+//        Intent intent_service = new Intent(this,MyMQttService.class);
+//        startService(intent_service);
+
+
+
+
+
 
     }
 
     public void btn_connect(View v){
 
-    }
-
-
-    //没有申请则一直请求
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(requestCode == 0) {
-            if(grantResults[0] == PackageManager.PERMISSION_GRANTED){
-
-            }else{
-                ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_PHONE_STATE},0);
-            }
-        }
     }
 }
