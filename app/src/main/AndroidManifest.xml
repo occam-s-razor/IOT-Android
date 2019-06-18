@@ -24,7 +24,9 @@
         <activity android:name=".Login.LoginActivity">
 
         </activity>
-        <activity android:name=".MainActivity"></activity>
+        <activity android:name=".MainActivity">
+
+        </activity>
 
         <service
             android:name=".MQTT.MyMQttService"

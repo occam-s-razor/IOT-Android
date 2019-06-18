@@ -12,6 +12,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.alibaba.fastjson.JSON;
 import com.edu.sicnu.cs.zzy.iot_android.Login.LoginActivity;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -26,6 +27,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 
 public class MyMQttService extends Service {
     public final String TAG = MyMQttService.class.getSimpleName();
@@ -56,19 +58,20 @@ public class MyMQttService extends Service {
     public void onCreate() {
         super.onCreate();
         isfirst = true;
+        init();
+        doClientConnection();
+        try {
+            mqttAsyncClient.subscribe(CLIENTID+"_conversation",1);
+            isfirst = false;
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
     }
 
 
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if(isfirst){
-            init();
-            isfirst = false;
-        }
-        if(!mqttAsyncClient.isConnected()){
-            doClientConnection();
-        }
         int type = intent.getIntExtra("type",-1);
         switch (type){
             case 0:
@@ -77,17 +80,22 @@ public class MyMQttService extends Service {
                 publish(strjson);   //发布
                 break;
             case 1:
+                //订阅信息
+
                 break;
             case 2:
+                //发送控制命令
+
+                break;
+            case 3:
+                //修改密码
+
                 break;
         }
 
 
         return super.onStartCommand(intent, flags, startId);
     }
-
-
-
 
     /**
      * 发布 （模拟其他客户端发布消息）
@@ -103,7 +111,6 @@ public class MyMQttService extends Service {
         mqttmessage.setPayload(message.getBytes());
 
         try {
-            //参数分别为：主题、消息的字节数组、服务质量、是否在服务器保留断开连接后的最后一条消息
             if(mqttAsyncClient.isConnected()){
                 mqttAsyncClient.publish(topic, mqttmessage);
             }
@@ -183,15 +190,17 @@ public class MyMQttService extends Service {
         @Override
         public void messageArrived(String topic, MqttMessage message) throws Exception {
             Log.i(TAG, "收到消息： " + new String(message.getPayload()));
-            //收到消息，这里弹出Toast表示。如果需要更新UI，可以使用广播或者EventBus进行发送
-            Toast.makeText(getApplicationContext(), "messageArrived: " + new String(message.getPayload()), Toast.LENGTH_LONG).show();
-            //收到其他客户端的消息后，响应给对方告知消息已到达或者消息有问题等
-
+            String data = new String(message.getPayload());
+            HashMap<String, Object> hashMap= JSON.parseObject(data, HashMap.class);
+            String result = (String) hashMap.get("type");
+            if(result.equals("login_return")){
+                sendMessage_login(hashMap);
+            }
         }
 
         @Override
         public void deliveryComplete(IMqttDeliveryToken arg0) {
-
+            Log.i(TAG, "成功发送消息 ");
         }
 
         @Override
@@ -292,9 +301,12 @@ public class MyMQttService extends Service {
         }
     }
 
-    private void sendMessage_login(String message){
+    /**
+     * 将接受到的消息发送出去（登录界面）
+     */
+    private void sendMessage_login(HashMap<String, Object> hashMap){
         Intent intent = new Intent(LoginActivity.Broad);
-        intent.putExtra("data",message);
+        intent.putExtra("data",hashMap);
         sendBroadcast(intent);
     }
 

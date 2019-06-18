@@ -7,6 +7,8 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -14,21 +16,30 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.edu.sicnu.cs.zzy.iot_android.BroadcastReceiver.LoginReceiver;
 import com.edu.sicnu.cs.zzy.iot_android.MQTT.MyMQttService;
+import com.edu.sicnu.cs.zzy.iot_android.MainActivity;
 import com.edu.sicnu.cs.zzy.iot_android.R;
 
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class LoginActivity extends AppCompatActivity {
     private EditText editText_usr;
     private EditText editText_psw;
+    private Button Btn_login;
     private LoginReceiver loginReceiver;
+    private HashMap<String,String> result = new HashMap<>();
+    public boolean isSuccess;
     private static final String TAG = "LoginActivity";
     public static String Broad = "com.edu.sicnu.cs.zzy.IOT.loginReceiver";
     @Override
@@ -49,9 +60,10 @@ public class LoginActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_PHONE_STATE},0);
         }
 
-
+        isSuccess = false;
         editText_usr = findViewById(R.id.edt_usr);
         editText_psw = findViewById(R.id.edt_psw);
+        Btn_login = findViewById(R.id.btn_login);
 
         //注册广播监听
         loginReceiver = new LoginReceiver(LoginActivity.this);
@@ -75,7 +87,8 @@ public class LoginActivity extends AppCompatActivity {
 
 
     public void btn_Login(View v){
-        HashMap<String, Object> hashMap = new HashMap<String, Object>();
+        Btn_login.setEnabled(false);
+        final HashMap<String, Object> hashMap = new HashMap<String, Object>();
         hashMap.put("type","login");
         hashMap.put("client_id",getSerialNumber());
         HashMap<String, String> msg = new HashMap<String, String>();
@@ -95,14 +108,34 @@ public class LoginActivity extends AppCompatActivity {
         intent_service.putExtra("data",strjson);
         startService(intent_service);
 
-
-
-
-
-
-
+        //监听是否登录成功
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Message msg=new Message();
+                for(int i =0;i<100;i++){
+                    try {
+                        Thread.sleep(30);
+                        if(isSuccess){
+                            msg.what = 1;
+                            handler.sendMessage(msg);
+                            break;
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if(!isSuccess){
+                    msg.what = 2;
+                    handler.sendMessage(msg);
+                }
+            }
+        }).start();
     }
 
+//    public void setSuccess(boolean success) {
+//        isSuccess = success;
+//    }
 
     /**
      * 获取手机序列号
@@ -128,6 +161,35 @@ public class LoginActivity extends AppCompatActivity {
         }
         return serial;
     }
+
+
+    /**
+     * 处理线程发来的消息
+     *
+     */
+    private Handler handler=new Handler(){
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case 1://获取到what属性为1的message
+                    //Toast.makeText(LoginActivity.this, "登录成功..." , Toast.LENGTH_LONG).show();
+                    Intent intent = new Intent(LoginActivity.this,MainActivity.class);
+                    startActivity(intent);
+                    break;
+                case 2:
+                    Toast.makeText(LoginActivity.this, "连接服务器超时..." , Toast.LENGTH_LONG).show();
+                    Btn_login.setEnabled(true);
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+
+
+
 
 
     @Override
