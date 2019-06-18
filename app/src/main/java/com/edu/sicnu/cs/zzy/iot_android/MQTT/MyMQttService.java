@@ -60,18 +60,21 @@ public class MyMQttService extends Service {
         isfirst = true;
         init();
         doClientConnection();
-        try {
-            mqttAsyncClient.subscribe(CLIENTID+"_conversation",1);
-            isfirst = false;
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
+
     }
 
 
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if(isfirst){
+            try {
+                mqttAsyncClient.subscribe(CLIENTID+"_conversation",1);
+                isfirst = false;
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
+        }
         int type = intent.getIntExtra("type",-1);
         switch (type){
             case 0:
@@ -112,7 +115,7 @@ public class MyMQttService extends Service {
 
         try {
             if(mqttAsyncClient.isConnected()){
-                mqttAsyncClient.publish(topic, mqttmessage);
+                mqttAsyncClient.publish(topic, test,qos,retained);
             }
 
         } catch (MqttException e) {
@@ -231,7 +234,7 @@ public class MyMQttService extends Service {
         */
         mMqttConnectOptions = new MqttConnectOptions();
         mMqttConnectOptions.setAutomaticReconnect(true); //断开后，是否自动连接
-        mMqttConnectOptions.setCleanSession(false); //设置是否清除缓存
+        mMqttConnectOptions.setCleanSession(true); //设置是否清除缓存
         mMqttConnectOptions.setConnectionTimeout(10); //设置超时时间，单位：秒
         mMqttConnectOptions.setKeepAliveInterval(20); //设置心跳包发送间隔，单位：秒
         mMqttConnectOptions.setUserName(USERNAME); //设置用户名
@@ -244,19 +247,19 @@ public class MyMQttService extends Service {
         String topic = PUBLISH_TOPIC;
         Integer qos = 1;
         Boolean retained = false;
-        if ((!message.equals("")) || (!topic.equals(""))) {
-            // 最后的遗嘱
-            try {
-                mMqttConnectOptions.setWill(topic, message.getBytes(), qos.intValue(), retained.booleanValue());
-            } catch (Exception e) {
-                Log.i(TAG, "Exception Occured", e);
-                doConnect = false;
-                iMqttActionListener.onFailure(null, e);
-            }
-        }
-        if (doConnect) {
-            //doClientConnection();
-        }
+//        if ((!message.equals("")) || (!topic.equals(""))) {
+//            // 最后的遗嘱
+//            try {
+//                mMqttConnectOptions.setWill(topic, message.getBytes(), qos.intValue(), retained.booleanValue());
+//            } catch (Exception e) {
+//                Log.i(TAG, "Exception Occured", e);
+//                doConnect = false;
+//                iMqttActionListener.onFailure(null, e);
+//            }
+//        }
+//        if (doConnect) {
+//            //doClientConnection();
+//        }
     }
 
     /**

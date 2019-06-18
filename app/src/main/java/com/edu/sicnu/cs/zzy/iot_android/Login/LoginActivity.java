@@ -175,6 +175,7 @@ public class LoginActivity extends AppCompatActivity {
             switch (msg.what) {
                 case 1://获取到what属性为1的message
                     //Toast.makeText(LoginActivity.this, "登录成功..." , Toast.LENGTH_LONG).show();
+                    Btn_login.setEnabled(true);
                     Intent intent = new Intent(LoginActivity.this,MainActivity.class);
                     startActivity(intent);
                     break;
