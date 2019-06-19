@@ -60,27 +60,32 @@ public class MyMQttService extends Service {
         isfirst = true;
         init();
         doClientConnection();
-
+        try {
+            mqttAsyncClient.subscribe("ZZY_conversation",1);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
     }
 
 
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if(isfirst){
-            try {
-                mqttAsyncClient.subscribe(CLIENTID+"_conversation",1);
-                isfirst = false;
-            } catch (MqttException e) {
-                e.printStackTrace();
-            }
-        }
+//        if(isfirst){
+//            try {
+//                mqttAsyncClient.subscribe("ZZY_conversation",1);
+//                isfirst = false;
+//            } catch (MqttException e) {
+//                e.printStackTrace();
+//            }
+//        }
         int type = intent.getIntExtra("type",-1);
         switch (type){
             case 0:
                 //登录
                 String strjson = intent.getStringExtra("data");
                 publish(strjson);   //发布
+
                 break;
             case 1:
                 //订阅信息
@@ -124,17 +129,11 @@ public class MyMQttService extends Service {
     }
 
     /**
-     * 响应 （收到其他客户端的消息后，响应给对方告知消息已到达或者消息有问题等）
-     *
-     * @param message 消息
+     * 订阅
      */
-    public void response(String message) {
-        String topic = SUBSCRIBE_TOPIC;
-        Integer qos = 2;
-        Boolean retained = false;
+    public void subTopic(String[] Topic, int[] Qos){
         try {
-            //参数分别为：主题、消息的字节数组、服务质量、是否在服务器保留断开连接后的最后一条消息
-            mqttAsyncClient.publish(topic, message.getBytes(), qos.intValue(), retained.booleanValue());
+            mqttAsyncClient.subscribe(Topic,Qos);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -232,9 +231,11 @@ public class MyMQttService extends Service {
          * mqttAndroidClient.setCallback(mqttCallback);
          * 使用以上方法无法连接到服务器
         */
+        //mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), HOST, CLIENTID);
+
         mMqttConnectOptions = new MqttConnectOptions();
         mMqttConnectOptions.setAutomaticReconnect(true); //断开后，是否自动连接
-        mMqttConnectOptions.setCleanSession(true); //设置是否清除缓存
+        mMqttConnectOptions.setCleanSession(false); //设置是否清除缓存
         mMqttConnectOptions.setConnectionTimeout(10); //设置超时时间，单位：秒
         mMqttConnectOptions.setKeepAliveInterval(20); //设置心跳包发送间隔，单位：秒
         mMqttConnectOptions.setUserName(USERNAME); //设置用户名
@@ -247,19 +248,19 @@ public class MyMQttService extends Service {
         String topic = PUBLISH_TOPIC;
         Integer qos = 1;
         Boolean retained = false;
-//        if ((!message.equals("")) || (!topic.equals(""))) {
-//            // 最后的遗嘱
-//            try {
-//                mMqttConnectOptions.setWill(topic, message.getBytes(), qos.intValue(), retained.booleanValue());
-//            } catch (Exception e) {
-//                Log.i(TAG, "Exception Occured", e);
-//                doConnect = false;
-//                iMqttActionListener.onFailure(null, e);
-//            }
-//        }
-//        if (doConnect) {
-//            //doClientConnection();
-//        }
+        if ((!message.equals("")) || (!topic.equals(""))) {
+            // 最后的遗嘱
+            try {
+                mMqttConnectOptions.setWill(topic, message.getBytes(), qos.intValue(), retained.booleanValue());
+            } catch (Exception e) {
+                Log.i(TAG, "Exception Occured", e);
+                doConnect = false;
+                iMqttActionListener.onFailure(null, e);
+            }
+        }
+        if (doConnect) {
+            //doClientConnection();
+        }
     }
 
     /**
@@ -272,9 +273,8 @@ public class MyMQttService extends Service {
 
                 mqttAsyncClient.setCallback(mqttCallback); //设置监听订阅消息的回调
 
-
-
-                //mqttAndroidClient.connect(mMqttConnectOptions,null,iMqttActionListener);
+//                mqttAndroidClient.connect(mMqttConnectOptions,getApplicationContext(),iMqttActionListener);
+//                mqttAndroidClient.setCallback(mqttCallback);
             } catch (MqttException e) {
                 e.printStackTrace();
             }
@@ -316,13 +316,14 @@ public class MyMQttService extends Service {
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         try {
-            mqttAsyncClient.disconnect(); //断开连接
-            //mqttAndroidClient.disconnect();
+            //mqttAsyncClient.disconnect(); //断开连接
+            mqttAndroidClient.disconnect();
         } catch (MqttException e) {
             e.printStackTrace();
         }
-        super.onDestroy();
+
     }
 
 }

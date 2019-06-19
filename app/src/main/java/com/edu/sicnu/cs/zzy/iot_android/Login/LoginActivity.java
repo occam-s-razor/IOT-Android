@@ -106,6 +106,7 @@ public class LoginActivity extends AppCompatActivity {
         Intent intent_service = new Intent(this, MyMQttService.class);
         intent_service.putExtra("type",0);
         intent_service.putExtra("data",strjson);
+        intent_service.putExtra("usr",editText_usr.getText().toString());
         startService(intent_service);
 
         //监听是否登录成功
@@ -178,6 +179,7 @@ public class LoginActivity extends AppCompatActivity {
                     Btn_login.setEnabled(true);
                     Intent intent = new Intent(LoginActivity.this,MainActivity.class);
                     startActivity(intent);
+                    LoginActivity.this.finish();
                     break;
                 case 2:
                     Toast.makeText(LoginActivity.this, "连接服务器超时..." , Toast.LENGTH_LONG).show();
