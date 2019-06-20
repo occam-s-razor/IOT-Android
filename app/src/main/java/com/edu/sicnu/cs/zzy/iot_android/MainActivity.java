@@ -1,35 +1,39 @@
 package com.edu.sicnu.cs.zzy.iot_android;
 
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.CompoundButton;
 import android.widget.Toast;
 
 import com.edu.sicnu.cs.zzy.iot_android.Fragment.Fragment_1;
 import com.edu.sicnu.cs.zzy.iot_android.Fragment.Fragment_2;
 import com.edu.sicnu.cs.zzy.iot_android.Fragment.Fragment_3;
+import com.edu.sicnu.cs.zzy.iot_android.MQTT.MyMQttService;
 import com.edu.sicnu.cs.zzy.iot_android.Utils.ActivityCollector;
+
+import org.json.JSONObject;
+
+import java.lang.reflect.Method;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, BottomNavigationView.OnNavigationItemSelectedListener{
     private BottomNavigationView bottomNavigationView;
@@ -73,9 +77,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case android.R.id.home:
                 drawerLayout.openDrawer(GravityCompat.START);
                 break;
+            case R.id.navigation_monitor:
+                Intent intent = new Intent(this,VideoActivity.class);
+                startActivity(intent);
+                break;
         }
         return true;
     }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,12 +101,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawerLayout = findViewById(R.id.drawer_layout);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        //右上角图标
+        toolbar.setOverflowIcon(getResources().getDrawable(R.drawable.ic_stat_name_toolbar_right));
 
+        //左上角按钮
         ActionBar actionBar = getSupportActionBar();
         if (actionBar!=null){
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setHomeAsUpIndicator(R.drawable.ic_stat_name_mine);
         }
+
+
+
         fragmentManager = getSupportFragmentManager();
         bottomNavigationView = (BottomNavigationView)findViewById(R.id.navigation);
         bottomNavigationView.setSelectedItemId(R.id.navigation_message);
@@ -114,15 +129,47 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         switchFragment(fragment2);  //将第二个fragment放在前面
 
-
-
-
-
-
+        ;
 
 
 
     }
+
+    /**
+     *Toolbar右上角按钮
+     * @param menu
+     * @return
+     */
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.toolbar_navigation,menu);
+        return true;
+    }
+
+    /**
+     * 使Toolbar的popumenu中有图标
+     * @param view
+     * @param menu
+     * @return
+     */
+    @SuppressLint("RestrictedApi")
+    @Override
+    protected boolean onPrepareOptionsPanel(View view, Menu menu) {
+        if (menu != null) {
+            if (menu.getClass() == MenuBuilder.class) {
+                try {
+                    //利用反射获取私有方法
+                    Method m = menu.getClass().getDeclaredMethod("setOptionalIconsVisible", Boolean.TYPE);
+                    m.setAccessible(true);
+                    m.invoke(menu, true);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return super.onPrepareOptionsPanel(view, menu);
+    }
+
 
     /**
      * 切换Fragment
@@ -164,8 +211,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    public void btn_exit(View v){
-        appExit(this);
+    public void send(String string){
+        Intent intent = new Intent(this, MyMQttService.class);
+        intent.putExtra("type","2");
+        intent.putExtra("data",string);
+        startService(intent);
     }
 
     @Override

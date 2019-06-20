@@ -33,7 +33,7 @@ public class MyMQttService extends Service {
     public final String TAG = MyMQttService.class.getSimpleName();
 
     private static MqttAndroidClient mqttAndroidClient;
-    private static MqttAsyncClient mqttAsyncClient;
+    public static MqttAsyncClient mqttAsyncClient;
     private MqttConnectOptions mMqttConnectOptions;
     public        String HOST           = "tcp://119.23.61.148:61613"; //服务器地址（协议+地址+端口号）
     public        String USERNAME       = "admin"; //用户名
@@ -60,11 +60,8 @@ public class MyMQttService extends Service {
         isfirst = true;
         init();
         doClientConnection();
-        try {
-            mqttAsyncClient.subscribe("ZZY_conversation",1);
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
+
+
     }
 
 
@@ -88,7 +85,7 @@ public class MyMQttService extends Service {
 
                 break;
             case 1:
-                //订阅信息
+                //
 
                 break;
             case 2:
@@ -172,10 +169,13 @@ public class MyMQttService extends Service {
         public void onSuccess(IMqttToken arg0) {
             Log.i(TAG, "连接成功 ");
 //            try {
-//                mqttAsyncClient.subscribe(PUBLISH_TOPIC, 2);//订阅主题，参数：主题、服务质量
+//                mqttAsyncClient.subscribe("ZZY_conversation",1);
 //            } catch (MqttException e) {
 //                e.printStackTrace();
 //            }
+            String[] topic = {"ZZY_conversation",CLIENTID+"_conversation"};
+            int[] qos = {1,1};
+            subTopic(topic,qos);
 
         }
 
@@ -197,6 +197,8 @@ public class MyMQttService extends Service {
             String result = (String) hashMap.get("type");
             if(result.equals("login_return")){
                 sendMessage_login(hashMap);
+            }else if(result.equals("dashboard")){
+                sendMessage_info(hashMap);
             }
         }
 
@@ -269,6 +271,8 @@ public class MyMQttService extends Service {
     private void doClientConnection() {
         if (!mqttAsyncClient.isConnected() && isConnectIsNomarl()) {
             try {
+                mqttAsyncClient.setCallback(mqttCallback); //设置监听订阅消息的回调
+
                 mqttAsyncClient.connect(mMqttConnectOptions, null, iMqttActionListener);
 
                 mqttAsyncClient.setCallback(mqttCallback); //设置监听订阅消息的回调
@@ -306,6 +310,7 @@ public class MyMQttService extends Service {
 
     /**
      * 将接受到的消息发送出去（登录界面）
+     * @param hashMap
      */
     private void sendMessage_login(HashMap<String, Object> hashMap){
         Intent intent = new Intent(LoginActivity.Broad);
@@ -313,16 +318,26 @@ public class MyMQttService extends Service {
         sendBroadcast(intent);
     }
 
+    /**
+     * 将接受到的消息发送出去（消息界面）
+     * @param hashMap
+     */
+    private void sendMessage_info(HashMap<String, Object> hashMap){
+        Intent intent = new Intent("zcd.voicerobot");
+        intent.putExtra("data",hashMap);
+        sendBroadcast(intent);
+    }
+
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         try {
-            //mqttAsyncClient.disconnect(); //断开连接
-            mqttAndroidClient.disconnect();
+            mqttAsyncClient.disconnect(); //断开连接
+            //mqttAndroidClient.disconnect();
         } catch (MqttException e) {
             e.printStackTrace();
         }
+        super.onDestroy();
 
     }
 
